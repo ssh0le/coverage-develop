@@ -28,6 +28,8 @@ export default class Population {
         this.chrHeight = this.initChr('height', gens) * 0.5 + this.initChr('height', gens);
     }
 
+    //for new commit
+
     initPopulation() {
         for (let i = 1; i <= this.populationSize; i++) {
             let newChromosome = new Chromosome(this.chrWidth, this.chrHeight);
