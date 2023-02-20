@@ -222,7 +222,7 @@ class Canvas extends Component {
                 <Button
                     variant="contained"
                     color="default"
-                    onClick={this.routeToGenApp}
+                    onClick={this.algorithmEvolution}
                     className={classes.button}
                     fullWidth
                     startIcon={<PictureInPictureAlt />}

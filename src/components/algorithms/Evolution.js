@@ -1,30 +1,30 @@
+import Population from "./evolution/Population";
 
+import Gen from "./evolution/Gen";
 
-import Population from './evolution/Population';
-
-import Gen from './evolution/Gen';
-
-import React from 'react';
-import { connect } from 'react-redux';
+import React from "react";
+import { connect } from "react-redux";
 //material UI
-import { withStyles } from '@material-ui/core/styles';
-import Button from '@material-ui/core/Button';
-//custom 
-import Canvas from './Canvas';
-import BadDetails from './BadDetails';
+import { withStyles } from "@material-ui/core/styles";
+import Button from "@material-ui/core/Button";
+//custom
+import Canvas from "./Canvas";
+import BadDetails from "./BadDetails";
 //utils
-import { getTopLeftPointBySizeAndBottomLeftPoint, 
-        getBottomRightPointBySizeAndBottomLeftPoint,
-        getSuitableDetailsForWidth,
-        getSuitableDetailsForHeight } from './AlgorithmsUtil';
+import {
+    getTopLeftPointBySizeAndBottomLeftPoint,
+    getBottomRightPointBySizeAndBottomLeftPoint,
+    getSuitableDetailsForWidth,
+    getSuitableDetailsForHeight,
+} from "./AlgorithmsUtil";
 
-import { withSnackbar } from 'notistack';
-
+import { withSnackbar } from "notistack";
+import { isArguments } from "lodash";
 
 const displaceResultToLeftUpCorner = (chromosome) => {
     const bulgingUpGen = chromosome.gens.sort(Gen.sortByBulgingUp)[0];
     const leftProtrudingGen = chromosome.gens.sort(Gen.sortByLeftProtruding)[0];
-    chromosome.gens.forEach(gen => {
+    chromosome.gens.forEach((gen) => {
         gen.x = gen.x - leftProtrudingGen.l.x;
         gen.y = gen.y - bulgingUpGen.l.y;
     });
@@ -32,15 +32,17 @@ const displaceResultToLeftUpCorner = (chromosome) => {
 };
 
 const stabilizeResult = (result) => {
-    const xMultiplier = 1000 / result.drawInfo.widthToDraw * (result.drawInfo.widthToDraw / result.drawInfo.heightToDraw);
+    const xMultiplier =
+        (1000 / result.drawInfo.widthToDraw) *
+        (result.drawInfo.widthToDraw / result.drawInfo.heightToDraw);
     const yMultiplier = 1000 / result.drawInfo.heightToDraw;
     result.drawInfo = {
         outerRectHeight: result.drawInfo.outerRectHeight * yMultiplier,
         outerRectWidth: result.drawInfo.outerRectWidth * xMultiplier,
         widthToDraw: result.drawInfo.widthToDraw * xMultiplier,
-        heightToDraw: result.drawInfo.heightToDraw * yMultiplier
-    }
-    result.gens.forEach(gen => {
+        heightToDraw: result.drawInfo.heightToDraw * yMultiplier,
+    };
+    result.gens.forEach((gen) => {
         gen.width = gen.width * xMultiplier;
         gen.height = gen.height * yMultiplier;
         gen.x = gen.x * xMultiplier;
@@ -53,58 +55,73 @@ const stabilizeResult = (result) => {
     return result;
 };
 
-
-const runEvolution = (gens, chrWidth, chrHeight) => {
+const createListOfGen = (gens) => {
     const gensCollection = [];
-    gens.forEach(gen => {
-        gensCollection.push(new Gen(+gen.width, +gen.height));
+    gens.forEach((gen) => {
+        for (let i = 1; i <= +gen.amount; i++) {
+            gensCollection.push(new Gen(+gen.width, +gen.height));
+            gensCollection.at(-1).outId = `${gen.id}-${i}`;
+        }
     });
-    const startAlgorithTime = new Date()
-    return new Population(gensCollection)
-        .startEvolution()
-        .then(result => {
-            const resultWithDetails = displaceResultToLeftUpCorner(result[result.length - 1]);
-            resultWithDetails.drawInfo = {
-                outerRectHeight: chrHeight,
-                outerRectWidth: chrWidth,
-                widthToDraw: resultWithDetails.width > chrWidth ? resultWithDetails.width : chrWidth,
-                heightToDraw: resultWithDetails.height > chrHeight ? resultWithDetails.height : chrHeight
+    return gensCollection;
+}
+
+const runEvolution = async (gens, chrWidth, chrHeight) => {
+    const gensCollection = createListOfGen(gens);
+    const startAlgorithTime = new Date();
+    return new Population(gensCollection).startEvolution().then((result) => {
+        const resultWithDetails = displaceResultToLeftUpCorner(
+            result[result.length - 1]
+        );
+        resultWithDetails.drawInfo = {
+            outerRectHeight: chrHeight,
+            outerRectWidth: chrWidth,
+            widthToDraw:
+                resultWithDetails.width > chrWidth
+                    ? resultWithDetails.width
+                    : chrWidth,
+            heightToDraw:
+                resultWithDetails.height > chrHeight
+                    ? resultWithDetails.height
+                    : chrHeight,
+        };
+        if (resultWithDetails.gens.length > 1) {
+            resultWithDetails.info = {
+                fitness: resultWithDetails.getFitness(),
+                chromosomeSquare: resultWithDetails.getChromosomeSquare(),
+                freeSpace:
+                    resultWithDetails.getChromosomeSquare() *
+                    (1 - resultWithDetails.getFitness()),
+                time: new Date() - startAlgorithTime,
             };
-            if (resultWithDetails.gens.length > 1) {
-                resultWithDetails.info = {
-                    fitness: resultWithDetails.getFitness(),
-                    chromosomeSquare: resultWithDetails.getChromosomeSquare(),
-                    freeSpace: resultWithDetails.getChromosomeSquare() * (1 - resultWithDetails.getFitness()),
-                    time: new Date() - startAlgorithTime
-                };
-            } else {
-                resultWithDetails.info = {
-                    chromosomeSquare: resultWithDetails.getChromosomeSquare(),
-                    time: new Date() - startAlgorithTime
-                };
-            }
-            return stabilizeResult(resultWithDetails);
-        });
+        } else {
+            resultWithDetails.info = {
+                chromosomeSquare: resultWithDetails.getChromosomeSquare(),
+                time: new Date() - startAlgorithTime,
+            };
+        }
+        console.log(resultWithDetails);
+        return stabilizeResult(resultWithDetails);
+    });
 };
 
-const styles  = {
+const styles = {
     listItem: {
-        width: '100%'
+        width: "100%",
     },
     colorWhite: {
-        color: '#ffffff'
-    }
+        color: "#ffffff",
+    },
 };
 
 class Evolution extends React.Component {
-
     constructor(props) {
         super(props);
         this.container = React.createRef();
         this.state = {
             canvasSizes: {
                 width: 0,
-                height: 0
+                height: 0,
             },
             details: [],
             badDetails: [],
@@ -132,28 +149,55 @@ class Evolution extends React.Component {
                 detailedParts.push({
                     id: `${detail.id}-${index + 1}`,
                     width: Math.round(+detail.width * factor),
-                    height: Math.round(+detail.height * factor)
+                    height: Math.round(+detail.height * factor),
                 });
             }
         });
-        
-        this.setState({
-            ...this.state,
-            canvasSizes: {
-                width: canvasWidth,
-                height: canvasHeight
+
+        this.setState(
+            {
+                ...this.state,
+                canvasSizes: {
+                    width: canvasWidth,
+                    height: canvasHeight,
+                },
+                details: detailedParts,
+                factor,
             },
-            details: detailedParts,
-            factor
-        }, this.startAlgorithm);
+            this.startAlgorithm
+        );
     }
 
-    startAlgorithm = () => {
+    getDetailsFromChromo(chromosome) {
+        const details = [];
+            chromosome.gens.forEach(gen => {
+                details.push({
+                    id: gen.outId,
 
-        runEvolution(this.props.details, this.props.canvas.width, this.props.canvas.height).then((data) => console.log(data));
+                })
+            })
+    }
 
+    startAlgorithm = async () => {
         let startTime = Date.now();
-
+        runEvolution(
+            this.props.details,
+            this.props.canvas.width,
+            this.props.canvas.height
+        ).then((data) => {
+            //"data" is result of evolution algo
+            let endTime = Date.now();
+            this.props.enqueueSnackbar(
+                `Время выполнения ${endTime - startTime} мс`,
+                {
+                    variant: "success",
+                    autoHideDuration: 3000,
+                    action: this.action,
+                }
+            );
+            //write here
+            const details = this.getDetailsFromChromo(data);
+        });
         const { canvasSizes, details, factor } = this.state;
         let badDetails = [];
         let canvases = [];
@@ -254,8 +298,8 @@ class Evolution extends React.Component {
         //             currentCanvas.details.push(currentDetail);
         //             isAdded = true;
         //             break;
-        //         } 
-                
+        //         }
+
         //         if (suitableDetailForHeight) {
         //             let currentDetail = {
         //                 id: detail.id,
@@ -289,19 +333,19 @@ class Evolution extends React.Component {
         //         usedCanvas.verifiableDetailsOnWidth.forEach((detail, index) => {
         //             if (detail.points.bottomRight.x + 1 > usedCanvas.width) {
         //                 detailsIndexToDeleteOnWidth.push(index);
-        //             } 
+        //             }
         //         });
-    
+
         //         let detailsIndexToDeleteOnHeight = [];
         //         usedCanvas.verifiableDetailsOnHeight.forEach((detail, index) => {
         //             if (detail.points.topLeft.y - 1 < 0) {
         //                 detailsIndexToDeleteOnHeight.push(index);
-        //             } 
+        //             }
         //         });
-    
+
         //         detailsIndexToDeleteOnWidth.forEach(index => usedCanvas.verifiableDetailsOnWidth.splice(index, 1));
         //         detailsIndexToDeleteOnHeight.forEach(index => usedCanvas.verifiableDetailsOnHeight.splice(index, 1));
-        //     } 
+        //     }
 
         //     if (!isBadDetail && !isAdded) {
 
@@ -334,7 +378,7 @@ class Evolution extends React.Component {
         //                 width: Math.round(detail.width / factor),
         //                 height: Math.round(detail.height / factor)
         //             });
-        //         }    
+        //         }
 
         //         let tempDetail = {
         //             id: detail.id,
@@ -361,27 +405,28 @@ class Evolution extends React.Component {
         // console.log(canvases);
         // console.log(badDetails);
 
-        let endTime = Date.now();
-        
-        this.setState({
-            ...this.state,
-            canvases: canvases,
-            badDetails: badDetails
-        }, () => {
-            this.props.dispatch({
-                type: 'CLOSE_SPINNER'
-            });
-            this.props.enqueueSnackbar(`Время выполнения ${endTime - startTime} мс`, {
-                variant: 'success',
-                autoHideDuration: 3000,
-                action: this.action
-            });
-        });
+        this.setState(
+            {
+                ...this.state,
+                canvases: canvases,
+                badDetails: badDetails,
+            },
+            () => {
+                this.props.dispatch({
+                    type: "CLOSE_SPINNER",
+                });
+            }
+        );
     };
 
-    action = key => (
+    action = (key) => (
         <>
-            <Button className={this.props.classes.colorWhite} onClick={() => { this.props.closeSnackbar(key) }}>
+            <Button
+                className={this.props.classes.colorWhite}
+                onClick={() => {
+                    this.props.closeSnackbar(key);
+                }}
+            >
                 ОК
             </Button>
         </>
@@ -395,9 +440,7 @@ class Evolution extends React.Component {
                 <div ref={this.container}>
                     <BadDetails badDetails={badDetails} />
                     {canvases.map((canvas, index) => {
-                        return (
-                            <Canvas canvasInfo={canvas} key={index} />
-                        );
+                        return <Canvas canvasInfo={canvas} key={index} />;
                     })}
                 </div>
             </>
@@ -405,12 +448,14 @@ class Evolution extends React.Component {
     }
 }
 
-const mapStateToProps = state => {
+const mapStateToProps = (state) => {
     return {
         canvas: state.canvas,
         details: state.details,
-        settings: state.settings
-    }
+        settings: state.settings,
+    };
 };
 
-export default withStyles(styles)(connect(mapStateToProps)(withSnackbar(Evolution)));
+export default withStyles(styles)(
+    connect(mapStateToProps)(withSnackbar(Evolution))
+);

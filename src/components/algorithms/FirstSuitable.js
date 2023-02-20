@@ -371,7 +371,6 @@ class FirstSuitable extends React.Component {
 
   render() {
     const { canvases, badDetails } = this.state;
-    console.log(canvases);
     return (
       <>
         <div ref={this.container}>
