@@ -99,11 +99,9 @@ export default class Population {
             promisesResult.push(res);
         }
         const mutations = promisesResult.map((crossover) => crossover.makeMutation());
-        console.log(mutations);
         const newChromosomes = [];
         while (mutations.length) {
             const res = await mutations.pop();
-            console.log(mutations.length);
             newChromosomes.push(res);
         }
         return newChromosomes;

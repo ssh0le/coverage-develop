@@ -1,7 +1,5 @@
 import Population from "./evolution/Population";
-
 import Gen from "./evolution/Gen";
-
 import React from "react";
 import { connect } from "react-redux";
 //material UI
@@ -32,10 +30,11 @@ const displaceResultToLeftUpCorner = (chromosome) => {
 };
 
 const stabilizeResult = (result) => {
-    const xMultiplier =
-        (1000 / result.drawInfo.widthToDraw) *
-        (result.drawInfo.widthToDraw / result.drawInfo.heightToDraw);
-    const yMultiplier = 1000 / result.drawInfo.heightToDraw;
+    // const xMultiplier =
+    //     (1000 / result.drawInfo.widthToDraw) *
+    //     (result.drawInfo.widthToDraw / result.drawInfo.heightToDraw);
+    // const yMultiplier = 1000 / result.drawInfo.heightToDraw;
+    const xMultiplier = 1, yMultiplier = 1;
     result.drawInfo = {
         outerRectHeight: result.drawInfo.outerRectHeight * yMultiplier,
         outerRectWidth: result.drawInfo.outerRectWidth * xMultiplier,
@@ -73,6 +72,7 @@ const runEvolution = async (gens, chrWidth, chrHeight) => {
         const resultWithDetails = displaceResultToLeftUpCorner(
             result[result.length - 1]
         );
+        console.log(chrHeight, chrWidth);
         resultWithDetails.drawInfo = {
             outerRectHeight: chrHeight,
             outerRectWidth: chrWidth,
@@ -100,6 +100,7 @@ const runEvolution = async (gens, chrWidth, chrHeight) => {
                 time: new Date() - startAlgorithTime,
             };
         }
+        console.log(resultWithDetails.drawInfo.outerRectHeight);
         console.log(resultWithDetails);
         return stabilizeResult(resultWithDetails);
     });
@@ -132,7 +133,6 @@ class Evolution extends React.Component {
 
     componentDidMount() {
         let canvasWidth, canvasHeight, factor;
-
         if (this.props.settings.isAdaptiveCanvas) {
             canvasWidth = this.container.current.clientWidth;
             factor = canvasWidth / +this.props.canvas.width;
@@ -142,7 +142,8 @@ class Evolution extends React.Component {
             canvasHeight = +this.props.canvas.height;
             factor = 1;
         }
-
+        
+        console.log(canvasWidth, canvasHeight);
         let detailedParts = [];
         this.props.details.forEach((detail) => {
             for (let index = 0; index < +detail.amount; index++) {
@@ -167,7 +168,7 @@ class Evolution extends React.Component {
             this.startAlgorithm
         );
     }
-
+    //from 2d proj to coverage prog
     getDetailsFromChromo(chromosome) {
         const details = [];
             chromosome.gens.forEach(gen => {
@@ -180,6 +181,15 @@ class Evolution extends React.Component {
 
     startAlgorithm = async () => {
         let startTime = Date.now();
+        // const worker = new Worker('../../Worker/index.js');
+        // worker.postMessage('hello worker from react');
+        // worker.onmessage((mess) => {
+        //     console.log(mess);
+        // })
+        // console.log('message posted')
+        console.log(this.props.details,
+            this.props.canvas.width,
+            this.props.canvas.height);
         runEvolution(
             this.props.details,
             this.props.canvas.width,
