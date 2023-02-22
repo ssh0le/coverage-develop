@@ -30,11 +30,10 @@ const displaceResultToLeftUpCorner = (chromosome) => {
 };
 
 const stabilizeResult = (result) => {
-    // const xMultiplier =
-    //     (1000 / result.drawInfo.widthToDraw) *
-    //     (result.drawInfo.widthToDraw / result.drawInfo.heightToDraw);
-    // const yMultiplier = 1000 / result.drawInfo.heightToDraw;
-    const xMultiplier = 1, yMultiplier = 1;
+    const xMultiplier =
+        (1000 / result.drawInfo.widthToDraw) *
+        (result.drawInfo.widthToDraw / result.drawInfo.heightToDraw);
+    const yMultiplier = 1000 / result.drawInfo.heightToDraw;
     result.drawInfo = {
         outerRectHeight: result.drawInfo.outerRectHeight * yMultiplier,
         outerRectWidth: result.drawInfo.outerRectWidth * xMultiplier,
@@ -63,7 +62,7 @@ const createListOfGen = (gens) => {
         }
     });
     return gensCollection;
-}
+};
 
 const runEvolution = async (gens, chrWidth, chrHeight) => {
     const gensCollection = createListOfGen(gens);
@@ -100,7 +99,6 @@ const runEvolution = async (gens, chrWidth, chrHeight) => {
                 time: new Date() - startAlgorithTime,
             };
         }
-        console.log(resultWithDetails.drawInfo.outerRectHeight);
         console.log(resultWithDetails);
         return stabilizeResult(resultWithDetails);
     });
@@ -142,7 +140,7 @@ class Evolution extends React.Component {
             canvasHeight = +this.props.canvas.height;
             factor = 1;
         }
-        
+
         console.log(canvasWidth, canvasHeight);
         let detailedParts = [];
         this.props.details.forEach((detail) => {
@@ -171,12 +169,18 @@ class Evolution extends React.Component {
     //from 2d proj to coverage prog
     getDetailsFromChromo(chromosome) {
         const details = [];
-            chromosome.gens.forEach(gen => {
-                details.push({
-                    id: gen.outId,
-
-                })
-            })
+        chromosome.gens.forEach((gen) => {
+            details.push({
+                id: gen.outId,
+                width: gen.width,
+                height: gen.height,
+                points: {
+                    bottomRight: gen.r,
+                    topLeft: gen.l,
+                },
+            });
+        });
+        return details;
     }
 
     startAlgorithm = async () => {
@@ -187,9 +191,11 @@ class Evolution extends React.Component {
         //     console.log(mess);
         // })
         // console.log('message posted')
-        console.log(this.props.details,
+        console.log(
+            this.props.details,
             this.props.canvas.width,
-            this.props.canvas.height);
+            this.props.canvas.height
+        );
         runEvolution(
             this.props.details,
             this.props.canvas.width,
@@ -197,20 +203,43 @@ class Evolution extends React.Component {
         ).then((data) => {
             //"data" is result of evolution algo
             let endTime = Date.now();
-            this.props.enqueueSnackbar(
-                `Время выполнения ${endTime - startTime} мс`,
+            //write here
+            let newCanvas = {
+                details: this.getDetailsFromChromo(data),
+                verifiableDetailsOnWidth: [],
+                verifiableDetailsOnHeight: [],
+                width: data.width,
+                height: data.height,
+                rootSizes: {
+                    width: this.props.canvas.width,
+                    height: this.props.canvas.height,
+                },
+                factor: 1,
+            };
+            this.setState(
                 {
-                    variant: "success",
-                    autoHideDuration: 3000,
-                    action: this.action,
+                    ...this.state,
+                    canvases: [newCanvas],
+                    badDetails: [],
+                },
+                () => {
+                    this.props.dispatch({
+                        type: "CLOSE_SPINNER",
+                    });
+                    this.props.enqueueSnackbar(
+                        `Время выполнения ${endTime - startTime} мс`,
+                        {
+                            variant: "success",
+                            autoHideDuration: 3000,
+                            action: this.action,
+                        }
+                    );
                 }
             );
-            //write here
-            const details = this.getDetailsFromChromo(data);
         });
-        const { canvasSizes, details, factor } = this.state;
-        let badDetails = [];
-        let canvases = [];
+        // const { canvasSizes, details, factor } = this.state;
+        // let badDetails = [];
+        // let canvases = [];
 
         // let canvases = [{
         //     details: [],
@@ -415,18 +444,18 @@ class Evolution extends React.Component {
         // console.log(canvases);
         // console.log(badDetails);
 
-        this.setState(
-            {
-                ...this.state,
-                canvases: canvases,
-                badDetails: badDetails,
-            },
-            () => {
-                this.props.dispatch({
-                    type: "CLOSE_SPINNER",
-                });
-            }
-        );
+        // this.setState(
+        //     {
+        //         ...this.state,
+        //         canvases: canvases,
+        //         badDetails: badDetails,
+        //     },
+        //     () => {
+        //         this.props.dispatch({
+        //             type: "CLOSE_SPINNER",
+        //         });
+        //     }
+        // );
     };
 
     action = (key) => (
