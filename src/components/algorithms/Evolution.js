@@ -18,6 +18,8 @@ import {
 
 import { withSnackbar } from "notistack";
 import { isArguments } from "lodash";
+import WorkerBuilder from "../../Worker/worker-builder";
+import Worker from '../../Worker/index';
 
 const displaceResultToLeftUpCorner = (chromosome) => {
     const bulgingUpGen = chromosome.gens.sort(Gen.sortByBulgingUp)[0];
@@ -68,10 +70,10 @@ const runEvolution = async (gens, chrWidth, chrHeight) => {
     const gensCollection = createListOfGen(gens);
     const startAlgorithTime = new Date();
     return new Population(gensCollection).startEvolution().then((result) => {
-        const resultWithDetails = displaceResultToLeftUpCorner(
-            result[result.length - 1]
-        );
-        console.log(chrHeight, chrWidth);
+        // const resultWithDetails = displaceResultToLeftUpCorner(
+        //     result[result.length - 1]
+        // );
+        const resultWithDetails = result[result.length - 1];
         resultWithDetails.drawInfo = {
             outerRectHeight: chrHeight,
             outerRectWidth: chrWidth,
@@ -140,8 +142,6 @@ class Evolution extends React.Component {
             canvasHeight = +this.props.canvas.height;
             factor = 1;
         }
-
-        console.log(canvasWidth, canvasHeight);
         let detailedParts = [];
         this.props.details.forEach((detail) => {
             for (let index = 0; index < +detail.amount; index++) {
@@ -166,7 +166,7 @@ class Evolution extends React.Component {
             this.startAlgorithm
         );
     }
-    //from 2d proj to coverage prog
+    //from 2d proj to coverage proj
     getDetailsFromChromo(chromosome) {
         const details = [];
         chromosome.gens.forEach((gen) => {
@@ -191,6 +191,13 @@ class Evolution extends React.Component {
         //     console.log(mess);
         // })
         // console.log('message posted')
+        const instance = new WorkerBuilder(Worker);
+        instance.onmessage = (message) => {
+            if (message) {
+                console.log('Received a message from worker ', message.data);
+            }
+        }
+        instance.postMessage('Hello worker');
         console.log(
             this.props.details,
             this.props.canvas.width,
@@ -208,8 +215,8 @@ class Evolution extends React.Component {
                 details: this.getDetailsFromChromo(data),
                 verifiableDetailsOnWidth: [],
                 verifiableDetailsOnHeight: [],
-                width: data.width,
-                height: data.height,
+                width: this.props.canvas.width,
+                height: this.props.canvas.height,
                 rootSizes: {
                     width: this.props.canvas.width,
                     height: this.props.canvas.height,

@@ -37,6 +37,7 @@ class Canvas extends Component {
         let ctx = this.canvas.current.getContext('2d');
 
         let totalSquare = this.props.canvasInfo.rootSizes.width * this.props.canvasInfo.rootSizes.height;
+        console.log(this.props)
         let detailsSquare = this.props.canvasInfo.details.reduce((accum, detail) => {
             let width = +detail.points.bottomRight.x - +detail.points.topLeft.x;
             let height = +detail.points.bottomRight.y - +detail.points.topLeft.y;
@@ -88,7 +89,6 @@ class Canvas extends Component {
     render() {
         const { classes, canvasInfo } = this.props;
         const { totalSquare, detailsSquare, totalSquareMin } = this.state;
-
         return (
             <div className={classes.root}>
                 <Typography component="div" variant="subtitle2">

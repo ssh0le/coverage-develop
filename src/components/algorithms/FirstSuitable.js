@@ -333,7 +333,7 @@ class FirstSuitable extends React.Component {
     });
 
     let endTime = Date.now();
-
+    console.log(canvases);
     this.setState(
       {
         ...this.state,

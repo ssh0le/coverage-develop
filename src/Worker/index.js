@@ -1,9 +1,14 @@
 import Population from "../components/algorithms/evolution/Population";
 import Gen from "../components/algorithms/evolution/Gen";
 
-window.self.onmessage = function(e) {
-    console.log('worker received data');
-    console.log(e.data);
+// eslint-disable-next-line import/no-anonymous-default-export
+export default () => {
+    // eslint-disable-next-line no-restricted-globals
+    self.onmessage = function (e) {
+        console.log("worker received data");
+        console.log(e.data);
+        postMessage('hello app!')
+    };
 }
 
 const runEvolution = (gens, chrWidth, chrHeight) => {
@@ -44,7 +49,6 @@ const runEvolution = (gens, chrWidth, chrHeight) => {
         return stabilizeResult(resultWithDetails);
     });
 };
-
 const createListOfGen = (gens) => {
     const gensCollection = [];
     gens.forEach((gen) => {
@@ -54,8 +58,7 @@ const createListOfGen = (gens) => {
         }
     });
     return gensCollection;
-}
-
+};
 const displaceResultToLeftUpCorner = (chromosome) => {
     const bulgingUpGen = chromosome.gens.sort(Gen.sortByBulgingUp)[0];
     const leftProtrudingGen = chromosome.gens.sort(Gen.sortByLeftProtruding)[0];
@@ -65,7 +68,6 @@ const displaceResultToLeftUpCorner = (chromosome) => {
     });
     return chromosome;
 };
-
 const stabilizeResult = (result) => {
     const xMultiplier =
         (1000 / result.drawInfo.widthToDraw) *
