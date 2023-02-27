@@ -98,7 +98,6 @@ const runEvolution = async (gens, chrWidth, chrHeight) => {
                 time: new Date() - startAlgorithTime,
             };
         }
-        console.log(resultWithDetails);
         return stabilizeResult(resultWithDetails);
     });
 };
@@ -204,15 +203,36 @@ class Evolution extends React.Component {
         }
     }
 
-    getDetailsSquare(details) {
-        console.log(details);
+    getOriginalDetailsSquare(details) {
         let detailsSquare = details.reduce((accum, detail) => {
             return accum + +detail.width * +detail.height * +detail.amount;
         }, 0);
         return detailsSquare;
     }
+    getActualDetailsSquare(details) {
+        let detailsSquare = details.reduce((accum, detail) => {
+            return accum + +detail.width * +detail.height;
+        }, 0);
+        return detailsSquare;
+    }
 
-    
+    getDetailsFigureSquare(gens) {
+        let x = 0, y = 0;
+        gens.forEach(gen => {
+            if (gen.points.bottomRight.x > x) {
+                x = gen.points.bottomRight.x;
+            }
+            if (gen.points.bottomRight.y > y) {
+                y = gen.points.bottomRight.y;
+            }
+        });
+        return x * y;
+    }
+
+    getSquareMinPercent(gens, width, height) {
+        const uselessSpace = this.getDetailsFigureSquare(gens);
+        return uselessSpace / (width * height);
+    }
 
     startAlgorithm = async () => {
         let startTime = Date.now();
@@ -234,8 +254,10 @@ class Evolution extends React.Component {
                     height: this.props.canvas.height,
                 },
                 factor: 1,
-                detailsSquare: this.getDetailsSquare(this.props.details)
+                detailsSquare: this.getOriginalDetailsSquare(this.props.details),
             };
+            const uselessFigureSquare =  this.getSquareMinPercent(newCanvas.details, data.drawInfo.outerRectWidth, data.drawInfo.outerRectHeight);
+            newCanvas.uselessFigureSquare = uselessFigureSquare;
             this.setState(
                 {
                     ...this.state,

@@ -36,7 +36,6 @@ class Canvas extends Component {
 
     componentDidMount() {
         let ctx = this.canvas.current.getContext("2d");
-
         let totalSquare =
             this.props.canvasInfo.rootSizes.width *
             this.props.canvasInfo.rootSizes.height;
@@ -56,7 +55,6 @@ class Canvas extends Component {
         } else {
             detailsSquare = this.props.canvasInfo.detailsSquare;
         }
-
         let detailsWithMinY = this.props.canvasInfo.details[0];
         let detailsWithMaxX = this.props.canvasInfo.details[0];
 
@@ -71,7 +69,7 @@ class Canvas extends Component {
                     ? detail
                     : detailsWithMaxX;
         });
-        let totalSquareMin =
+        let totalSquareMin = this.props.canvasInfo.uselessFigureSquare ? this.props.canvasInfo.uselessFigureSquare * totalSquare:
             detailsWithMaxX.points.bottomRight.x *
             (this.props.canvasInfo.rootSizes.height -
                 detailsWithMinY.points.topLeft.y);
@@ -105,7 +103,9 @@ class Canvas extends Component {
             ctx.fillText(
                 detail.id,
                 detail.points.topLeft.x + 2,
-                detail.points.bottomRight.y - 2
+                // detail.points.topLeft.x + 2,
+                // detail.points.bottomRight.y - 2
+                detail.points.bottomRight.y
             );
         });
     }
