@@ -18,8 +18,6 @@ import {
 
 import { withSnackbar } from "notistack";
 import { isArguments } from "lodash";
-import WorkerBuilder from "../../Worker/worker-builder";
-import Worker from '../../Worker/index';
 
 const displaceResultToLeftUpCorner = (chromosome) => {
     const bulgingUpGen = chromosome.gens.sort(Gen.sortByBulgingUp)[0];
@@ -70,10 +68,9 @@ const runEvolution = async (gens, chrWidth, chrHeight) => {
     const gensCollection = createListOfGen(gens);
     const startAlgorithTime = new Date();
     return new Population(gensCollection).startEvolution().then((result) => {
-        // const resultWithDetails = displaceResultToLeftUpCorner(
-        //     result[result.length - 1]
-        // );
-        const resultWithDetails = result[result.length - 1];
+        const resultWithDetails = displaceResultToLeftUpCorner(
+            result[result.length - 1]
+        );
         resultWithDetails.drawInfo = {
             outerRectHeight: chrHeight,
             outerRectWidth: chrWidth,
@@ -169,40 +166,56 @@ class Evolution extends React.Component {
     //from 2d proj to coverage proj
     getDetailsFromChromo(chromosome) {
         const details = [];
+        const difference = this.getMinXAndY(chromosome);
         chromosome.gens.forEach((gen) => {
             details.push({
                 id: gen.outId,
                 width: gen.width,
                 height: gen.height,
-                points: {
-                    bottomRight: gen.r,
-                    topLeft: gen.l,
-                },
+                points: this.getStabilaizedPoints(gen.l, gen.width, gen.height, difference),
             });
         });
         return details;
     }
 
+    getStabilaizedPoints(genL, width, height, difference) {
+        const newTopLeft = {
+            x: genL.x - difference.x,
+            y: genL.y - difference.y,
+        };
+        return {
+            topLeft: newTopLeft,
+            bottomRight: { x: newTopLeft.x + width, y: newTopLeft.y + height },
+        };
+    }
+
+    getMinXAndY(chromo) {
+        let x = 100000, y = 100000;
+        chromo.gens.forEach(gen => {
+            if (gen.l.x < x) {
+                x = gen.l.x;
+            }
+            if (gen.l.y < y) {
+                y = gen.l.y;
+            }
+        })
+        return {
+            x, y
+        }
+    }
+
+    getDetailsSquare(details) {
+        console.log(details);
+        let detailsSquare = details.reduce((accum, detail) => {
+            return accum + +detail.width * +detail.height * +detail.amount;
+        }, 0);
+        return detailsSquare;
+    }
+
+    
+
     startAlgorithm = async () => {
         let startTime = Date.now();
-        // const worker = new Worker('../../Worker/index.js');
-        // worker.postMessage('hello worker from react');
-        // worker.onmessage((mess) => {
-        //     console.log(mess);
-        // })
-        // console.log('message posted')
-        const instance = new WorkerBuilder(Worker);
-        instance.onmessage = (message) => {
-            if (message) {
-                console.log('Received a message from worker ', message.data);
-            }
-        }
-        instance.postMessage('Hello worker');
-        console.log(
-            this.props.details,
-            this.props.canvas.width,
-            this.props.canvas.height
-        );
         runEvolution(
             this.props.details,
             this.props.canvas.width,
@@ -210,18 +223,18 @@ class Evolution extends React.Component {
         ).then((data) => {
             //"data" is result of evolution algo
             let endTime = Date.now();
-            //write here
             let newCanvas = {
                 details: this.getDetailsFromChromo(data),
                 verifiableDetailsOnWidth: [],
                 verifiableDetailsOnHeight: [],
-                width: this.props.canvas.width,
-                height: this.props.canvas.height,
+                width: data.drawInfo.outerRectWidth,
+                height: data.drawInfo.outerRectHeight,
                 rootSizes: {
                     width: this.props.canvas.width,
                     height: this.props.canvas.height,
                 },
                 factor: 1,
+                detailsSquare: this.getDetailsSquare(this.props.details)
             };
             this.setState(
                 {
@@ -244,225 +257,6 @@ class Evolution extends React.Component {
                 }
             );
         });
-        // const { canvasSizes, details, factor } = this.state;
-        // let badDetails = [];
-        // let canvases = [];
-
-        // let canvases = [{
-        //     details: [],
-        //     verifiableDetailsOnWidth: [],
-        //     verifiableDetailsOnHeight: [],
-        //     width: canvasSizes.width,
-        //     height: canvasSizes.height,
-        //     rootSizes: {
-        //         width: this.props.canvas.width,
-        //         height: this.props.canvas.height
-        //     },
-        //     factor
-        // }];
-
-        // details.sort((a, b) => {
-        //         if (a.width * a.height > b.width * b.height) return -1;
-        //         if (a.width * a.height < b.width * b.height) return 1;
-        //         return 0;
-        //     })
-        //     .forEach((detail, index) => {
-        //     console.log(`\n[INFO] detail - ${index + 1} | ${detail.id}`);
-        //     console.log(`[INFO] Всего полотен - ${canvases.length}`);
-        //     let isAdded = false;
-        //     let isBadDetail = false;
-        //     let usedCanvas;
-
-        //     for (var canvasIndex = 0; canvasIndex < canvases.length; canvasIndex++) {
-        //         console.log(`[INFO] canvas - ${canvasIndex + 1}`);
-        //         var currentCanvas = canvases[canvasIndex];
-        //         usedCanvas = currentCanvas;
-
-        //         if (detail.width > currentCanvas.width || detail.height > currentCanvas.height) {
-        //             console.log(`[OPERATION] проверка на неподходящую деталь`);
-        //             badDetails.push({
-        //                 id: detail.id,
-        //                 width: Math.round(detail.width / factor),
-        //                 height: Math.round(detail.height / factor)
-        //             });
-        //             isBadDetail = true;
-        //             break;
-        //         }
-
-        //         if (currentCanvas.details.length === 0) {
-        //             let tempDetail = {
-        //                 id: detail.id,
-        //                 width: Math.round(detail.width / factor),
-        //                 height: Math.round(detail.height / factor),
-        //                 points: {
-        //                     bottomRight: getBottomRightPointBySizeAndBottomLeftPoint({
-        //                         x: 0,
-        //                         y: currentCanvas.height
-        //                     }, detail),
-        //                     topLeft: getTopLeftPointBySizeAndBottomLeftPoint({
-        //                         x: 0,
-        //                         y: currentCanvas.height
-        //                     }, detail)
-        //                 }
-        //             };
-        //             currentCanvas.verifiableDetailsOnWidth.push(tempDetail);
-        //             currentCanvas.verifiableDetailsOnHeight.push(tempDetail);
-        //             currentCanvas.details.push(tempDetail);
-        //             isAdded = true;
-        //             break;
-        //         }
-
-        //         let suitableDetailForWidth = getSuitableDetailsForWidth(currentCanvas.details,
-        //                 currentCanvas.verifiableDetailsOnWidth,
-        //                 detail,
-        //                 currentCanvas);
-        //         let suitableDetailForHeight = getSuitableDetailsForHeight(currentCanvas.details,
-        //                 currentCanvas.verifiableDetailsOnHeight,
-        //                 detail,
-        //                 currentCanvas);
-
-        //         console.log(`[INFO] есть подходящая по ширине ${!!suitableDetailForWidth}`);
-        //         console.log(`[INFO] есть подходящая по высоте ${!!suitableDetailForHeight}`);
-
-        //         if (suitableDetailForWidth) {
-        //             let currentDetail = {
-        //                 id: detail.id,
-        //                 width: Math.round(detail.width / factor),
-        //                 height: Math.round(detail.height / factor),
-        //                 points: {
-        //                     bottomRight: getBottomRightPointBySizeAndBottomLeftPoint(suitableDetailForWidth.points.bottomRight, detail),
-        //                     topLeft: getTopLeftPointBySizeAndBottomLeftPoint(suitableDetailForWidth.points.bottomRight, detail)
-        //                 }
-        //             };
-        //             let detailIdToDelete = suitableDetailForWidth.id;
-
-        //             let detailIndexToDelete = currentCanvas.verifiableDetailsOnWidth.findIndex(detail => detail.id === detailIdToDelete);
-        //             currentCanvas.verifiableDetailsOnWidth.splice(detailIndexToDelete, 1);
-
-        //             currentCanvas.verifiableDetailsOnWidth.push(currentDetail);
-        //             currentCanvas.verifiableDetailsOnHeight.push(currentDetail);
-        //             currentCanvas.details.push(currentDetail);
-        //             isAdded = true;
-        //             break;
-        //         }
-
-        //         if (suitableDetailForHeight) {
-        //             let currentDetail = {
-        //                 id: detail.id,
-        //                 width: Math.round(detail.width / factor),
-        //                 height: Math.round(detail.height / factor),
-        //                 points: {
-        //                     bottomRight: getBottomRightPointBySizeAndBottomLeftPoint(suitableDetailForHeight.points.topLeft, detail),
-        //                     topLeft: getTopLeftPointBySizeAndBottomLeftPoint(suitableDetailForHeight.points.topLeft, detail)
-        //                 }
-        //             };
-        //             let detailIdToDelete = suitableDetailForHeight.id;
-
-        //             let detailIndexToDelete = currentCanvas.verifiableDetailsOnHeight.findIndex(detail => detail.id === detailIdToDelete);
-        //             currentCanvas.verifiableDetailsOnHeight.splice(detailIndexToDelete, 1);
-
-        //             currentCanvas.verifiableDetailsOnWidth.push(currentDetail);
-        //             currentCanvas.verifiableDetailsOnHeight.push(currentDetail);
-        //             currentCanvas.details.push(currentDetail);
-        //             isAdded = true;
-        //             break;
-        //         }
-        //         if (!isAdded && canvases.length === canvasIndex + 1) break;
-        //     }
-
-        //     console.log(`[INFO] была добавлена? ${!!isAdded}`);
-        //     console.log(`[INFO] плохая деталь? ${!!isBadDetail}`);
-
-        //     if (isAdded) {
-        //         console.log('[OPERATION] исключение некорректных деталей из проверочных');
-        //         let detailsIndexToDeleteOnWidth = [];
-        //         usedCanvas.verifiableDetailsOnWidth.forEach((detail, index) => {
-        //             if (detail.points.bottomRight.x + 1 > usedCanvas.width) {
-        //                 detailsIndexToDeleteOnWidth.push(index);
-        //             }
-        //         });
-
-        //         let detailsIndexToDeleteOnHeight = [];
-        //         usedCanvas.verifiableDetailsOnHeight.forEach((detail, index) => {
-        //             if (detail.points.topLeft.y - 1 < 0) {
-        //                 detailsIndexToDeleteOnHeight.push(index);
-        //             }
-        //         });
-
-        //         detailsIndexToDeleteOnWidth.forEach(index => usedCanvas.verifiableDetailsOnWidth.splice(index, 1));
-        //         detailsIndexToDeleteOnHeight.forEach(index => usedCanvas.verifiableDetailsOnHeight.splice(index, 1));
-        //     }
-
-        //     if (!isBadDetail && !isAdded) {
-
-        //         if (!this.props.settings.isMultiCanvases) {
-        //             badDetails.push({
-        //                 id: detail.id,
-        //                 width: Math.round(detail.width / factor),
-        //                 height: Math.round(detail.height / factor)
-        //             });
-        //             return;
-        //         }
-
-        //         console.log('[OPERATION] добавление нового полотна');
-        //         let newCanvas = {
-        //             details: [],
-        //             verifiableDetailsOnWidth: [],
-        //             verifiableDetailsOnHeight: [],
-        //             width: canvasSizes.width,
-        //             height: canvasSizes.height,
-        //             rootSizes: {
-        //                 width: this.props.canvas.width,
-        //                 height: this.props.canvas.height
-        //             },
-        //             factor
-        //         };
-
-        //         if (detail.width > newCanvas.width || detail.height > newCanvas.height) {
-        //             badDetails.push({
-        //                 id: detail.id,
-        //                 width: Math.round(detail.width / factor),
-        //                 height: Math.round(detail.height / factor)
-        //             });
-        //         }
-
-        //         let tempDetail = {
-        //             id: detail.id,
-        //             width: Math.round(detail.width / factor),
-        //             height: Math.round(detail.height / factor),
-        //             points: {
-        //                 bottomRight: getBottomRightPointBySizeAndBottomLeftPoint({
-        //                     x: 0,
-        //                     y: newCanvas.height
-        //                 }, detail),
-        //                 topLeft: getTopLeftPointBySizeAndBottomLeftPoint({
-        //                     x: 0,
-        //                     y: newCanvas.height
-        //                 }, detail)
-        //             }
-        //         };
-        //         newCanvas.verifiableDetailsOnWidth.push(tempDetail);
-        //         newCanvas.verifiableDetailsOnHeight.push(tempDetail);
-        //         newCanvas.details.push(tempDetail);
-        //         canvases.push(newCanvas);
-        //     }
-        // });
-
-        // console.log(canvases);
-        // console.log(badDetails);
-
-        // this.setState(
-        //     {
-        //         ...this.state,
-        //         canvases: canvases,
-        //         badDetails: badDetails,
-        //     },
-        //     () => {
-        //         this.props.dispatch({
-        //             type: "CLOSE_SPINNER",
-        //         });
-        //     }
-        // );
     };
 
     action = (key) => (
