@@ -333,7 +333,7 @@ class FirstSuitable extends React.Component {
     });
 
     let endTime = Date.now();
-
+    console.log(canvases);
     this.setState(
       {
         ...this.state,
@@ -371,7 +371,7 @@ class FirstSuitable extends React.Component {
 
   render() {
     const { canvases, badDetails } = this.state;
-    console.log(canvases);
+    console.log(canvases[0], badDetails);
     return (
       <>
         <div ref={this.container}>

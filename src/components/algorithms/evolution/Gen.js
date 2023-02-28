@@ -1,4 +1,3 @@
-
 import Rectangle from './Rectangle';
 
 export default class Gen extends Rectangle {
