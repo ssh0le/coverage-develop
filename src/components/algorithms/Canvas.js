@@ -58,6 +58,7 @@ class Canvas extends Component {
         let detailsWithMinY = this.props.canvasInfo.details[0];
         let detailsWithMaxX = this.props.canvasInfo.details[0];
 
+        //отрисовка здесь
         this.props.canvasInfo.details.forEach((detail) => {
             detailsWithMinY =
                 detailsWithMinY.points.topLeft.y > detail.points.topLeft.y
@@ -69,10 +70,11 @@ class Canvas extends Component {
                     ? detail
                     : detailsWithMaxX;
         });
-        let totalSquareMin = this.props.canvasInfo.uselessFigureSquare ? this.props.canvasInfo.uselessFigureSquare * totalSquare:
-            detailsWithMaxX.points.bottomRight.x *
-            (this.props.canvasInfo.rootSizes.height -
-                detailsWithMinY.points.topLeft.y);
+        let totalSquareMin = this.props.canvasInfo.uselessFigureSquare
+            ? this.props.canvasInfo.uselessFigureSquare * totalSquare
+            : detailsWithMaxX.points.bottomRight.x *
+              (this.props.canvasInfo.rootSizes.height -
+                  detailsWithMinY.points.topLeft.y);
 
         this.setState({
             totalSquare,
@@ -80,10 +82,19 @@ class Canvas extends Component {
             totalSquareMin,
         });
 
+        let maxX = 0;
+        let maxY = 0;
+
         this.props.canvasInfo.details.forEach((detail) => {
             ctx.shadowOffsetX = 0;
             ctx.shadowOffsetY = 0;
             ctx.shadowBlur = 0;
+            if (maxX < detail.points.bottomRight.x) {
+                maxX = detail.points.bottomRight.x;
+            }
+            if (maxY < detail.points.bottomRight.y) {
+                maxY = detail.points.bottomRight.y;
+            }
 
             ctx.fillStyle = this.randomColor();
             ctx.fillRect(
@@ -108,6 +119,13 @@ class Canvas extends Component {
                 detail.points.bottomRight.y
             );
         });
+        if (this.props.canvasInfo.uselessFigureSquare) {
+            ctx.beginPath();
+            ctx.lineWidth = "2"
+            ctx.strokeStyle = "red";
+            ctx.rect(0, 0, maxX, maxY);
+            ctx.stroke();
+        }
     }
 
     render() {
